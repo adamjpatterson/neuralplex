@@ -25,5 +25,5 @@ dependencies = [
 path = "src/neuralplex/__about__.py"
 
 [project.urls]
-Homepage = "https://github.com/far-analytics/neuralplex"
-Issues = "https://github.com/far-analytics/neuralplex/issues"
+Homepage = "https://github.com/adamjpatterson/neuralplex"
+Issues = "https://github.com/adamjpatterson/neuralplex/issues"

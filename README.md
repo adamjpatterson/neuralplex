@@ -150,7 +150,7 @@ The green nodes comprise the inputs, the red nodes comprise the hidden layer, an
 
 |                                                                  Before Training                                                                  |                                                                 After Training                                                                  |
 | :-----------------------------------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------: |
-| ![Neural-pleX Before Training](https://raw.githubusercontent.com/far-analytics/neuralplex/refs/heads/main/images/Neural-pleX_before_training.png) | ![Neural-pleX After Training](https://raw.githubusercontent.com/far-analytics/neuralplex/refs/heads/main/images/Neural-pleX_after_training.png) |
+| ![Neural-pleX Before Training](https://raw.githubusercontent.com/adamjpatterson/neuralplex/refs/heads/main/images/Neural-pleX_before_training.png) | ![Neural-pleX After Training](https://raw.githubusercontent.com/adamjpatterson/neuralplex/refs/heads/main/images/Neural-pleX_after_training.png) |
 
 ## Test
 
@@ -161,7 +161,7 @@ A model is trained that estimates a decimal value given a binary nibble.
 #### Clone the repository.
 
 ```bash
-git clone https://github.com/far-analytics/neuralplex.git
+git clone https://github.com/adamjpatterson/neuralplex.git
 ```
 
 #### Change directory into the repository.
@@ -222,6 +222,6 @@ OK
 
 ## Support
 
-If you have a feature request or run into any issues, feel free to submit an [issue](https://github.com/far-analytics/neuralplex/issues). You’re also welcome to reach out to one of the authors.
+If you have a feature request or run into any issues, feel free to submit an [issue](https://github.com/adamjpatterson/neuralplex/issues). You’re also welcome to reach out to one of the authors.
 
-- [Adam Patterson](https://github.com/adpatter)
+- [Adam Patterson](https://github.com/adamjpatterson)
