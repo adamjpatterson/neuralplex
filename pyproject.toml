@@ -27,3 +27,6 @@ path = "src/neuralplex/__about__.py"
 [project.urls]
 Homepage = "https://github.com/adamjpatterson/neuralplex"
 Issues = "https://github.com/adamjpatterson/neuralplex/issues"
+
+[tool.pytest.ini_options]
+python_files = ["test.py", "test_*.py", "*_test.py"]
