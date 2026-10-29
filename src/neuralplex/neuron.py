@@ -1,78 +1,59 @@
-import math
-import statistics
-from typing import Dict, List, Self
-from scipy.stats import linregress
+from math import tanh
+from random import uniform
+from typing import Self
 
 
 class Neuron:
+    """One weight per incoming connection, one bias, and an activation."""
 
-    def __init__(self, m: float, b: float = 0, step: float = None, name=None):
-        self.m = m  # weight
-        self.b = b  # lift
-        self.name = name
+    def __init__(self, bias: float = 0, step: float | None = None,
+                 name=None, activation: str = "linear"):
+        if activation not in ("linear", "tanh"):
+            raise ValueError("activation must be 'linear' or 'tanh'")
+        if step is not None and step <= 0:
+            raise ValueError("step must be positive")
+        self.bias = bias
         self.step = step
-        self.value = 0
-        self.activation_count = 0
-        self.neuronsRHS: List[Self] = []
-        self.neuronsLHS: List[Self] = []
-        self.activation: Dict[Self, float] = {}
-        self.propagation: Dict[Self, float] = {}
+        self.name = name
+        self.activation = activation
+        self.weights: dict[Self, float] = {}
+        self.neuronsRHS: list[Self] = []
+        self.value = 0.0
+        self.gradient = 0.0  # d(loss) / d(output)
+        self.delta = 0.0  # d(loss) / d(weighted sum)
 
-    def connectRHS(self, neuronRHS: Self) -> None:
+    @property
+    def neuronsLHS(self) -> list[Self]:
+        return list(self.weights)
+
+    def connectRHS(self, neuronRHS: Self, weight: float | None = None) -> None:
+        if neuronRHS is self:
+            raise ValueError("A neuron cannot connect to itself")
         if neuronRHS not in self.neuronsRHS:
             self.neuronsRHS.append(neuronRHS)
-        if self not in neuronRHS.neuronsLHS:
-            neuronRHS.connectLHS(self)
+            neuronRHS.weights[self] = uniform(-0.1, 0.1) if weight is None else weight
 
-    def connectLHS(self, neuronLHS: Self) -> None:
-        if neuronLHS not in self.neuronsLHS:
-            self.neuronsLHS.append(neuronLHS)
-        if self not in neuronLHS.neuronsRHS:
-            neuronLHS.connectRHS(self)
+    def connectLHS(self, neuronLHS: Self, weight: float | None = None) -> None:
+        neuronLHS.connectRHS(self, weight)
 
     def disconnectRHS(self, neuronRHS: Self) -> None:
+        """Remove just this edge and its weight; save the weight before reconnecting."""
         if neuronRHS in self.neuronsRHS:
             self.neuronsRHS.remove(neuronRHS)
-        if self in neuronRHS.neuronsLHS:
-            neuronRHS.disconnectLHS(self)
-        if len(self.neuronsRHS) == 0:
-            for neuron in self.neuronsLHS:
-                neuron.disconnectRHS(self)
+            del neuronRHS.weights[self]
 
     def disconnectLHS(self, neuronLHS: Self) -> None:
-        if neuronLHS in self.neuronsLHS:
-            self.neuronsLHS.remove(neuronLHS)
-        if self in neuronLHS.neuronsRHS:
-            neuronLHS.disconnectRHS(self)
-        if len(self.neuronsLHS) == 0:
-            for neuron in self.neuronsRHS:
-                neuron.disconnectLHS(self)
+        neuronLHS.disconnectRHS(self)
 
-    def activate(self, value: float, neuron: Self = None) -> None:
-        if self.activation_count == 0:
-            self.activation = {}
-        self.activation_count = self.activation_count + 1
-        self.activation.update({neuron: value})
-        if len(self.neuronsLHS) == 0 or self.activation_count == len(self.neuronsLHS):
-            self.value = self.m * sum(self.activation.values())
-            for neuron in self.neuronsRHS:
-                neuron.activate(self.value, self)
-                # Under what conditions should a numeric activation value be propagated?
-            self.activation_count = 0
+    def activate(self) -> None:
+        total = self.bias
+        for source, weight in self.weights.items():
+            total += source.value * weight
+        self.value = tanh(total) if self.activation == "tanh" else total
 
-    def propagate(self, error: float, neuron: Self = None) -> None:
-        self.propagation.update({neuron: error})
-        if len(self.neuronsRHS) == 0 or len(self.propagation) == len(self.neuronsRHS):
-            for error in self.propagation.values():
-                self.m = self.m - (error * self.step)
-                # This is a primitive implementation; however, I have some ideas for how to improve it.
-                # Please let me know if you have any thoughts on how this should be implemented.
-            error_total = sum(self.propagation.values())
-            for neuron in self.neuronsLHS:
-                neuron_activation_value = self.activation[neuron]
-                if neuron_activation_value > 0 and error_total > 0 or neuron_activation_value < 0 and error_total < 0:
-                    neuron.propagate(error_total, self)
-                else:
-                    neuron.propagate(math.copysign(1, error_total), self)
-                # Likewise, the "backpropagation" still needs a lot of work.
-            self.propagation = {}
+    def propagate(self) -> None:
+        """Pass gradients backward without changing any parameters."""
+        derivative = 1 - self.value ** 2 if self.activation == "tanh" else 1.0
+        self.delta = self.gradient * derivative
+        for source, weight in self.weights.items():
+            source.gradient += self.delta * weight

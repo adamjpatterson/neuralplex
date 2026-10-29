@@ -16,10 +16,11 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-dependencies = [
-"scikit-learn",
-"scipy"
-]
+dependencies = []
+
+[project.optional-dependencies]
+digits = ["scikit-learn", "matplotlib"]
+visualization = ["d3blocks==2.3.2", "d3graph==3.2.1", "matplotlib"]
 
 [tool.hatch.version]
 path = "src/neuralplex/__about__.py"

@@ -162,3 +162,7 @@ cython_debug/
 *.pkl
 *.html
 notebooks
+# Generated digits experiment results
+/results/digits/
+
+/results/nibbles/

@@ -1,67 +1,99 @@
+"""Public API correctness, including numerical gradient checks."""
+
 import unittest
-import json
-from random import random, randint
-from sklearn.metrics import r2_score
-from neuralplex import Network, Layer, Neuron
 
-class Test(unittest.TestCase):
-
-    def test_nibbles(self):
-
-        ITERATION = int(1e4)
-        STEP = 1e-4
-
-        l1 = Layer(neurons=[Neuron(m=random()) for i in range(0, 4)], step=STEP)
-
-        l2 = Layer(neurons=[Neuron(m=random()) for i in range(0, 8)], step=STEP)
-
-        l3 = Layer(neurons=[Neuron(m=random())], step=STEP)
-
-        n1 = Network(
-            [
-                l1,
-                l2,
-                l3,
-            ]
-        )
-
-        print("Training the model.")
-        for i in range(0, ITERATION):
-
-            if i % 1e3 == 0:
-                print(f"Training iteration: {i}")
-
-            rn = randint(1, 15)
-
-            b = [int(n) for n in bin(rn)[2:]]
-
-            while len(b) < 4:
-                b = [0] + b
-
-            n1.train(b, [rn])
+from neuralplex import Layer, Network, Neuron, get_edge_data
 
 
-        ys = []
-        ys_predicted = []
-        for i in range(1, 16):
+class TestCorrectness(unittest.TestCase):
+    def test_forward_and_update(self):
+        model = Network([Layer([Neuron(), Neuron()]), Layer([Neuron()], step=0.1)], seed=13)
+        a, b = model.layers[0].neurons
+        output = model.layers[1].neurons[0]
+        output.weights = {a: 2.0, b: -1.0}
+        output.bias = 3.0
+        self.assertEqual(model.predict([4, 5]), [6])
+        model.train([4, 5], [5])
+        self.assertAlmostEqual(output.weights[a], 1.6)
+        self.assertAlmostEqual(output.weights[b], -1.5)
+        self.assertAlmostEqual(output.bias, 2.9)
 
-            b = [int(n) for n in bin(i)[2:]]
+    def test_gradients_and_reset(self):
+        model = Network([Layer([Neuron(), Neuron()]), Layer([Neuron(activation='tanh') for _ in range(3)], step=0.001), Layer([Neuron(), Neuron()], step=0.001)], seed=7)
+        model.input_layer.neurons[0].connectRHS(model.output_layer.neurons[0], weight=0.2)
+        for inputs, targets in [([0.4, -0.7], [0.2, -0.3]), ([-0.1, 0.5], [0.6, 0.1])]:
+            expected = []
+            for layer in model.layers[1:]:
+                for neuron in layer.neurons:
+                    for source in [*neuron.weights, None]:
+                        original = neuron.bias if source is None else neuron.weights[source]
+                        losses = []
+                        for offset in [1e-6, -1e-6]:
+                            if source is None:
+                                neuron.bias = original + offset
+                            else:
+                                neuron.weights[source] = original + offset
+                            losses.append(sum((p-y)**2 / 2 for p, y in zip(model.predict(inputs), targets)))
+                        if source is None:
+                            neuron.bias = original
+                        else:
+                            neuron.weights[source] = original
+                        expected.append((neuron, source, original, (losses[0]-losses[1])/2e-6))
+            model.train(inputs, targets)
+            for neuron, source, original, gradient in expected:
+                updated = neuron.bias if source is None else neuron.weights[source]
+                self.assertAlmostEqual((original-updated)/neuron.step, gradient, places=7)
 
-            while len(b) < 4:
-                b = [0] + b
+    def test_perfect_prediction_and_dimensions(self):
+        model = Network([Layer([Neuron(), Neuron()]), Layer([Neuron(activation='tanh') for _ in range(3)], step=0.001), Layer([Neuron(), Neuron()], step=0.001)], seed=13)
+        targets = model.predict([0.2, 0.4])
+        before = [(dict(n.weights), n.bias) for layer in model.layers for n in layer.neurons]
+        model.train([0.2, 0.4], targets)
+        self.assertEqual(before, [(dict(n.weights), n.bias) for layer in model.layers for n in layer.neurons])
+        with self.assertRaises(ValueError):
+            model.predict([1])
+        with self.assertRaises(ValueError):
+            model.train([1, 2], [1])
 
-            pn = n1.predict(b)
 
-            ys.append(i)
-            ys_predicted.append(pn[0])
+    def test_detach_and_reattach(self):
+        inputs = [Neuron(name=f'i{i}') for i in range(3)]
+        hidden, output = Neuron(name='h'), Neuron(name='o')
+        model = Network([Layer(inputs), Layer([hidden], step=0.01), Layer([output], step=0.01)], seed=13)
+        incoming = dict(hidden.weights)
+        outgoing = output.weights[hidden]
+        before = model.predict([1, 2, 3])
+        model.detach(hidden)
+        self.assertEqual(hidden.weights, {})
+        self.assertEqual(hidden.neuronsRHS, [])
+        self.assertTrue(all(not n.neuronsRHS for n in inputs))
+        self.assertEqual(model.predict([1, 2, 3]), [0])
+        model.layers[1].neurons.append(hidden)
+        for source, weight in incoming.items():
+            source.connectRHS(hidden, weight)
+        hidden.connectRHS(output, outgoing)
+        hidden.connectRHS(output, 999)  # Existing edges keep their weights.
+        self.assertEqual(model.predict([1, 2, 3]), before)
+        self.assertIn({'source': 'h', 'target': 'o', 'weight': outgoing}, get_edge_data(model))
+        self.assertEqual(len(get_edge_data(model)), 4)
+        inputs[0].disconnectRHS(hidden)
+        inputs[0].disconnectRHS(hidden)
+        model.train([1, 2, 3], [1])
+        with self.assertRaises(ValueError):
+            model.detach(output)
+        output.connectRHS(inputs[0])
+        with self.assertRaises(ValueError):
+            model.predict([1, 2, 3])
 
-            print(f"{i} input: {json.dumps(b)}, truth: {i} prediction: {json.dumps(pn)}")
+    def test_missing_step_and_external_connections(self):
+        a, b, outside = Neuron(), Neuron(), Neuron()
+        model = Network([Layer([a]), Layer([b])])
+        with self.assertRaises(ValueError):
+            model.train([1], [1])
+        a.connectRHS(outside)
+        with self.assertRaises(ValueError):
+            model.predict([1])
 
-        R2 = r2_score(ys, ys_predicted)
-
-        print(f"R2: {R2}")
-
-        self.assertGreaterEqual(R2, .9)
 
 if __name__ == '__main__':
     unittest.main()

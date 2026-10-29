@@ -16,12 +16,17 @@ An object oriented educational/experimental neural network implementation.
 - [Usage](#usage)
 - [Example](#example)
 - [Test](#test)
+- [Digits experiment](#digits-experiment)
 
 ## Installation
 
 ```bash
-pip install neuralplex
+git clone https://github.com/adamjpatterson/neuralplex.git
+cd neuralplex
+python -m pip install -e .
 ```
+
+Install from this checkout to use the implementation documented below.
 
 ## Usage
 
@@ -38,18 +43,18 @@ from neuralplex import Network, Layer, Neuron
 #### Set a step.
 
 ```python
-STEP = 1e-4
+STEP = 0.01
 ```
 
 #### Construct a neural network by specifying the Neurons for each Layer and adding the Layers to a Network.
 
-The resulting neural network will have 4 input neurons, 1 ouput neuron, and 8 neurons in the hidden layer.
+The resulting neural network will have 4 input neurons, 1 output neuron, and 8 neurons in the hidden layer.
 
 ```python
-l1 = Layer(neurons=[Neuron(m=random()) for i in range(0, 4)], step=STEP)
-l2 = Layer(neurons=[Neuron(m=random()) for i in range(0, 8)], step=STEP)
-l3 = Layer(neurons=[Neuron(m=random())], step=STEP)
-n1 = Network([l1, l2, l3])
+l1 = Layer(neurons=[Neuron() for i in range(0, 4)], step=STEP)
+l2 = Layer(neurons=[Neuron() for i in range(0, 8)], step=STEP)
+l3 = Layer(neurons=[Neuron()], step=STEP)
+n1 = Network([l1, l2, l3], seed=13)
 ```
 
 #### With the Network defined, you can train the network.
@@ -71,86 +76,93 @@ print(prediction)
 
 ### Train and visualize a Neural-pleX network
 
-In this example you will use [D3](https://d3js.org/) and [D3Blocks](https://d3blocks.github.io/d3blocks/pages/html/index.html) in order to visualize a neural network _before_ and _after_ training.
-
-#### Import the necessary dependencies.
+Train the four-bit conversion network with a reproducible stream of examples:
 
 ```python
-from random import random, randint
-import pandas as pd
-from neuralplex import Network, Layer, Neuron, get_edge_data
-from d3blocks import D3Blocks
+from random import Random
+
+rng = Random(13)
+for iteration in range(10000):
+    number = rng.randrange(16)
+    bits = [int(bit) for bit in f'{number:04b}']
+    n1.train(bits, [number])
+print(n1.predict([1, 0, 1, 0]))  # approximately [10.0]
 ```
 
-#### Implement a function that will visualize the network.
+To generate the complete before/after demonstration with
+[D3Blocks](https://d3blocks.github.io/d3blocks/d3graph.html):
+
+```bash
+python -m pip install -e '.[visualization]'
+python -m examples.nibble_visualization
+```
+
+Open `results/nibbles/index.html` in a browser. It contains two interactive
+views of the same input, `1010`, with identical initial positions and scales.
+Hover for signed weights, activations, and biases; drag to explore and reload
+to restore the matching layout. These visual edits do not modify the model.
+The optional visualization versions are pinned because the example adds fixed
+positions to D3Blocks' generated HTML.
+
+##### Visualizations of the network before and after training
+
+![Nibble network before and after training](images/nibble_multiweight.png)
+
+- Edge thickness is proportional to the absolute connection weight. Blue is
+  positive; orange is negative. Zero-weight edges have zero width.
+- Node area above a small visibility floor is proportional to absolute activation.
+  Green nodes are inputs, red nodes are hidden, and yellow is the output.
+- Both panels use the same scales. Node size represents activity for this input,
+  not importance, and does not encode the activation's sign.
+
+The script also writes exact values and positions to `results/nibbles/snapshots.json`.
+The PNG above is a static companion to the D3Blocks views; GitHub cannot run
+interactive JavaScript in the README.
+
+
+
+### How a neuron learns
+
+Each computational neuron calculates
+`activation(sum(source.value * weight) + bias)`. Inputs hold raw values.
+`Neuron()` uses linear activation; `Neuron(activation="tanh")` is available for
+hidden layers. Linear layers are sufficient for the nibble conversion task.
+
+`train` minimizes half the sum of squared output errors. It runs the forward
+pass, accumulates gradients backward through every connection, and only then
+updates weights and biases. A weight's gradient is `delta * source.value`;
+the bias gradient is `delta`. The code uses explicit loops, not automatic
+differentiation. Every non-input neuron needs a positive step.
+
+`Neuron(bias=...)` sets the bias. Each incoming connection has its own weight,
+stored in `receiver.weights[source]`. `Network(..., seed=13)` initializes
+weights reproducibly in [-0.1, 0.1]. Connections added
+later accept an explicit `weight`; repeated connection calls preserve existing
+weights. `get_edge_data` returns actual edges with signed weights, without
+synthetic null-target edges. Give nodes unique names when visualizing them.
+
+### Detach and reconnect between training steps
 
 ```python
-def visualize(n):
+hidden = n1.layers[1].neurons[0]
+incoming = dict(hidden.weights)
+outgoing = {target: target.weights[hidden] for target in hidden.neuronsRHS}
+n1.detach(hidden)
 
-    d3 = D3Blocks()
-
-    df = pd.DataFrame(get_edge_data(n))
-
-    df['weight'] = df['weight'] * 42
-
-    d3.d3graph(df, charge=1e4, filepath=None)
-
-    for index, source, target, weight in df.to_records():
-        if source.startswith('l1'):
-            color = 'green'
-        elif source.startswith('l2'):
-            color = 'red'
-        else:
-            color='yellow'
-
-        d3.D3graph.node_properties[source]['color'] = color
-        d3.D3graph.node_properties[source]['size'] = weight
-
-    d3.D3graph.show(save_button=True, filepath='./Neural-pleX.html')
+# Restore the neuron, including its saved connection weights.
+n1.layers[1].neurons.append(hidden)
+for source, weight in incoming.items():
+    source.connectRHS(hidden, weight=weight)
+for target, weight in outgoing.items():
+    hidden.connectRHS(target, weight=weight)
 ```
 
-#### Set a step.
-
-```python
-STEP = 1e-5
-```
-
-#### Construct a network.
-
-```python
-n = Network([Layer(neurons=[Neuron(m=random(), name=f'l{layer}-p{i}') for i in range(1, size+1)], step=STEP) for layer, size in zip([1,2,3], [4, 8, 1])])
-```
-
-#### Use D3 and D3Blocks in order to visualize the network _before_ training.
-
-```python
-visualize(n)
-```
-
-#### Train the network.
-
-```python
-for i in range(0, int(1e5)):
-    rn = randint(1, 15)
-    b = [int(n) for n in bin(rn)[2:]]
-    while len(b) < 4:
-        b = [0] + b
-    n.train(b, [rn])
-```
-
-#### Use D3 and D3Blocks in order to visualize the network _after_ training.
-
-```python
-visualize(n)
-```
-
-##### Visualizations of the network before and after training:
-
-The green nodes comprise the inputs, the red nodes comprise the hidden layer, and the yellow node is the output. The size of the Neuron is proportional to its coefficient and dependent on its random initialization and subsequent training.
-
-|                                                                  Before Training                                                                  |                                                                 After Training                                                                  |
-| :-----------------------------------------------------------------------------------------------------------------------------------------------: | :---------------------------------------------------------------------------------------------------------------------------------------------: |
-| ![Neural-pleX Before Training](https://raw.githubusercontent.com/adamjpatterson/neuralplex/refs/heads/main/images/Neural-pleX_before_training.png) | ![Neural-pleX After Training](https://raw.githubusercontent.com/adamjpatterson/neuralplex/refs/heads/main/images/Neural-pleX_after_training.png) |
+The neuron's bias, activation, and learning rate remain on the object. For one
+edge, use `source.disconnectRHS(target)` and `source.connectRHS(target, weight)`.
+Removing an edge does not cascade. A computational node without inputs uses
+its bias; an empty hidden layer left by detachment is allowed. Connections must
+run from earlier to later layers; input/output neurons cannot be detached.
+Change structure only between training steps, not concurrently with training.
 
 ## Test
 
@@ -176,7 +188,29 @@ cd neuralplex
 pip install -e .
 ```
 
-#### Run the tests.
+#### Run the Nibble Challenge on its own.
+
+```bash
+python -m unittest -v tests.test_nibbles
+```
+
+The test trains a fresh 4 → 8 → 1 network for 10,000 steps with a fixed random
+seed. It prints predictions before and after training for all sixteen nibbles,
+including `0000`, along with mean squared error and R². It checks that learning
+reduces error, R² is at least 0.99, and every prediction is within 0.05 of its
+decimal value. This demonstrates learning the conversion on the full nibble
+domain; it is not a held-out generalization benchmark.
+
+#### Run the correctness checks on their own.
+
+```bash
+python -m unittest -v tests.test
+```
+
+These check forward calculations, manual gradients, parameter updates,
+detachment and reconnection, and input validation.
+
+#### Run all tests.
 
 ```bash
 python -m unittest -v
@@ -184,41 +218,56 @@ python -m unittest -v
 
 ##### Output
 
+The nibble challenge prints training progress and before/after predictions for
+all sixteen inputs, followed by mean squared error and R².
+
+## Digits experiment
+
+Run a separate handwritten-digit experiment using the
+[scikit-learn 8×8 digits dataset](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html).
+From the repository, install the optional dependencies and run:
+
 ```bash
-test_nibbles (tests.test.Test.test_nibbles) ... Training the model.
-Training iteration: 0
-Training iteration: 1000
-Training iteration: 2000
-Training iteration: 3000
-Training iteration: 4000
-Training iteration: 5000
-Training iteration: 6000
-Training iteration: 7000
-Training iteration: 8000
-Training iteration: 9000
-1 input: [0, 0, 0, 1], truth: 1 prediction: [1.8160007977374275]
-2 input: [0, 0, 1, 0], truth: 2 prediction: [2.768211299141504]
-3 input: [0, 0, 1, 1], truth: 3 prediction: [4.584212096878932]
-4 input: [0, 1, 0, 0], truth: 4 prediction: [3.772563194981495]
-5 input: [0, 1, 0, 1], truth: 5 prediction: [5.588563992718923]
-6 input: [0, 1, 1, 0], truth: 6 prediction: [6.540774494122998]
-7 input: [0, 1, 1, 1], truth: 7 prediction: [8.356775291860426]
-8 input: [1, 0, 0, 0], truth: 8 prediction: [6.784403350226391]
-9 input: [1, 0, 0, 1], truth: 9 prediction: [8.600404147963818]
-10 input: [1, 0, 1, 0], truth: 10 prediction: [9.552614649367897]
-11 input: [1, 0, 1, 1], truth: 11 prediction: [11.368615447105324]
-12 input: [1, 1, 0, 0], truth: 12 prediction: [10.556966545207885]
-13 input: [1, 1, 0, 1], truth: 13 prediction: [12.372967342945314]
-14 input: [1, 1, 1, 0], truth: 14 prediction: [13.32517784434939]
-15 input: [1, 1, 1, 1], truth: 15 prediction: [15.141178642086818]
-R2: 0.9599237139109126
-ok
-
-----------------------------------------------------------------------
-Ran 1 test in 0.333s
-
-OK
+python -m pip install -e '.[digits]'
+python -m examples.digits
 ```
+
+[examples/digits.py](examples/digits.py) uses the current multi-weight neurons
+and manual backpropagation. The network has 64 input neurons, 16 tanh hidden
+neurons, and 10 linear outputs. Each output learns a target of 1 for its digit
+and 0 otherwise; the largest output selects the predicted digit. These scores
+are not probabilities.
+
+The experiment uses a fixed seed of 13 and a stratified 75%/25% split: 1,347
+training images and 450 unseen test images. Pixel values are divided by 16.
+Training runs for 20 epochs with a step of 0.001. Test images are evaluated only
+after training and are not used to select parameters.
+
+The example achieved **90.00% test accuracy** after 20 epochs, compared with
+**10.22%** for always predicting the most common training digit. This is a
+reproducible demonstration, not a claim about the best possible accuracy.
+
+The script prints progress and the confusion matrix, then saves:
+
+- `results/digits/report.txt`: configuration, accuracy, baseline, and confusion matrix.
+- `results/digits/predictions.csv`: dataset index, true label, and prediction for each test image.
+- `results/digits/predictions.png`: the first twelve test images and their predictions.
+- `results/digits/confusion_matrix.png`: counts by true and predicted digit.
+
+Generated results are ignored by Git and replaced on each run. The experiment
+is separate from unit-test discovery and adds no runtime dependencies to the
+core package.
+
+### Digits predictions and confusion matrix
+
+The prediction figure shows the first twelve test images, not selected
+successes. The confusion matrix includes all 450 test images; rows show the
+true digit and columns show the predicted digit. Both figures come from the
+example above, using seed 13.
+
+![Digits predictions](images/digits_predictions.png)
+
+![Digits confusion matrix](images/digits_confusion_matrix.png)
 
 ## Support
 

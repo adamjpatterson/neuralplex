@@ -1,19 +1,22 @@
-from typing import List, Self
+from typing import Self
+from random import Random
 
 from neuralplex.neuron import Neuron
 
 
 class Layer:
-
-    def __init__(self, neurons: List[Neuron], step: float = None):
+    def __init__(self, neurons: list[Neuron], step: float | None = None):
+        if step is not None and step <= 0:
+            raise ValueError("step must be positive")
         self.neurons = neurons
         self.step = step
-        if not self.step is None:
-            for neuron in self.neurons:
-                if neuron.step is None:
-                    neuron.step = self.step
+        for neuron in neurons:
+            if neuron.step is None:
+                neuron.step = step
 
-    def connect(self, layer: Self) -> None:
-        for p1 in self.neurons:
-            for p2 in layer.neurons:
-                p1.connectRHS(p2)
+    def connect(self, layer: Self, rng: Random | None = None) -> None:
+        for receiver in layer.neurons:
+            for source in self.neurons:
+                if source not in receiver.weights:
+                    weight = rng.uniform(-0.1, 0.1) if rng is not None else None
+                    source.connectRHS(receiver, weight)
