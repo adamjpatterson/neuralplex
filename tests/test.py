@@ -7,7 +7,7 @@ from neuralplex import Layer, Network, Neuron, get_edge_data
 
 class TestCorrectness(unittest.TestCase):
     def test_forward_and_update(self):
-        model = Network([Layer([Neuron(), Neuron()]), Layer([Neuron()], step=0.1)], seed=13)
+        model = Network([Layer([Neuron(), Neuron()]), Layer([Neuron()], step=0.1)], seed=42)
         a, b = model.layers[0].neurons
         output = model.layers[1].neurons[0]
         output.weights = {a: 2.0, b: -1.0}
@@ -19,7 +19,7 @@ class TestCorrectness(unittest.TestCase):
         self.assertAlmostEqual(output.bias, 2.9)
 
     def test_gradients_and_reset(self):
-        model = Network([Layer([Neuron(), Neuron()]), Layer([Neuron(activation='tanh') for _ in range(3)], step=0.001), Layer([Neuron(), Neuron()], step=0.001)], seed=7)
+        model = Network([Layer([Neuron(), Neuron()]), Layer([Neuron(activation='tanh') for _ in range(3)], step=0.001), Layer([Neuron(), Neuron()], step=0.001)], seed=42)
         model.input_layer.neurons[0].connectRHS(model.output_layer.neurons[0], weight=0.2)
         for inputs, targets in [([0.4, -0.7], [0.2, -0.3]), ([-0.1, 0.5], [0.6, 0.1])]:
             expected = []
@@ -45,7 +45,7 @@ class TestCorrectness(unittest.TestCase):
                 self.assertAlmostEqual((original-updated)/neuron.step, gradient, places=7)
 
     def test_perfect_prediction_and_dimensions(self):
-        model = Network([Layer([Neuron(), Neuron()]), Layer([Neuron(activation='tanh') for _ in range(3)], step=0.001), Layer([Neuron(), Neuron()], step=0.001)], seed=13)
+        model = Network([Layer([Neuron(), Neuron()]), Layer([Neuron(activation='tanh') for _ in range(3)], step=0.001), Layer([Neuron(), Neuron()], step=0.001)], seed=42)
         targets = model.predict([0.2, 0.4])
         before = [(dict(n.weights), n.bias) for layer in model.layers for n in layer.neurons]
         model.train([0.2, 0.4], targets)
@@ -59,7 +59,7 @@ class TestCorrectness(unittest.TestCase):
     def test_detach_and_reattach(self):
         inputs = [Neuron(name=f'i{i}') for i in range(3)]
         hidden, output = Neuron(name='h'), Neuron(name='o')
-        model = Network([Layer(inputs), Layer([hidden], step=0.01), Layer([output], step=0.01)], seed=13)
+        model = Network([Layer(inputs), Layer([hidden], step=0.01), Layer([output], step=0.01)], seed=42)
         incoming = dict(hidden.weights)
         outgoing = output.weights[hidden]
         before = model.predict([1, 2, 3])

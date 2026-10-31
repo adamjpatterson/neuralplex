@@ -18,10 +18,6 @@ classifiers = [
 ]
 dependencies = []
 
-[project.optional-dependencies]
-digits = ["scikit-learn", "matplotlib"]
-visualization = ["d3blocks==2.3.2", "d3graph==3.2.1", "matplotlib"]
-
 [tool.hatch.version]
 path = "src/neuralplex/__about__.py"
 
