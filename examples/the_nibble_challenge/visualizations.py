@@ -1,4 +1,4 @@
-"""Rendering helpers for the nibble notebook; no training happens here."""
+"""Rendering helpers for the nibble notebook."""
 
 from copy import deepcopy
 from math import sqrt

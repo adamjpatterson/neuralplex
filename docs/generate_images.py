@@ -1,4 +1,4 @@
-"""Generate the root README images directly, without importing or running examples."""
+"""Generate the root README images."""
 
 from copy import deepcopy
 from math import sqrt

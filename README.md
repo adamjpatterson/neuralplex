@@ -137,15 +137,13 @@ The neuron's bias, activation, and learning rate remain on the object. For one
 edge, use `source.disconnectRHS(target)` and `source.connectRHS(target, weight)`.
 Removing an edge does not cascade. A non-input neuron without incoming
 connections outputs `activation(bias)`; an empty hidden layer left by detachment
-is allowed. Connections must run from earlier to later layers; input/output neurons cannot be detached.
-Change structure only between training steps, not concurrently with training.
+is allowed.
 
 ## Examples
 
 The examples are notebooks with runnable cells for data preparation, network
 construction, training, evaluation, and exploration. Each notebook imports
-rendering functions from its neighboring `visualizations.py`; the learning
-process stays visible in the cells.
+rendering functions from its neighboring `visualizations.py`.
 
 Each example is an independent project with its own dependencies and setup
 instructions. Create a separate environment for each, install the local
@@ -156,7 +154,7 @@ Neuralplex checkout alongside that project, and launch its notebook:
 
 Run cells from top to bottom. When changing training settings, restart the
 kernel and run all cells; rerunning only training continues from the current
-weights. Each notebook imports functions from its adjacent `visualizations.py`.
+weights.
 
 ```text
 examples/
@@ -180,8 +178,7 @@ compares initial and trained predictions, and lets you change an input to
 inspect weights and activations. With seed 42, a step of 0.01, and 10,000
 training examples, the displayed R² rounds to 1.000000000.
 
-This example teaches learning on the full nibble domain; it is not a held-out
-generalization benchmark or part of the correctness suite.
+Training and evaluation both use all sixteen nibbles.
 
 ##### Visualizations of the network before and after training
 
@@ -196,9 +193,7 @@ generalization benchmark or part of the correctness suite.
 
 The notebook imports `visualize_network` from
 [its visualization module](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_nibble_challenge/visualizations.py).
-Figures display inline; the example does not save image files or reports.
-The static README illustration is generated separately by the documentation
-project described below.
+Figures display inline.
 
 ### The digits experiment
 
@@ -211,12 +206,11 @@ individual prediction and its ten output scores. Scores are not probabilities.
 The reproducible settings use seed 42, 1,347 training images, 450 test images,
 20 epochs, and a step of 0.001. The example achieves **90.22% test accuracy**,
 compared with **10.22%** for always predicting the most common training digit.
-This is a learning demonstration, not a claim about the best possible accuracy.
 Reserve a validation subset from training data before tuning parameters.
 
 The notebook imports `plot_predictions` and `plot_confusion_matrix` from
 [its visualization module](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_digits_experiment/visualizations.py).
-All results and figures display in the notebook, with no separate output files.
+Results and figures display in the notebook.
 
 #### Digits predictions and confusion matrix
 
@@ -230,9 +224,8 @@ true digit and columns show the predicted digit.
 
 ## Tests
 
-The single formal suite in `tests/test.py` checks forward calculations, manual
+The suite in `tests/test.py` checks forward calculations, manual
 gradients, parameter updates, detachment and reconnection, and input validation.
-It runs independently of the notebooks and optional visualization dependencies.
 
 #### Run all tests.
 
@@ -251,10 +244,8 @@ fixed seed-42 scenarios. From `docs/`, after following its environment setup:
 python generate_images.py
 ```
 
-It generates the nibble network image, digits predictions, and confusion matrix
-directly from Python, without importing or running the examples. Only this
-workflow writes the README images. The notebooks are for exploration and retain
-inline results for reading on GitHub.
+It writes the nibble network image, digits predictions, and confusion matrix
+to `images/`.
 
 ## Support
 
