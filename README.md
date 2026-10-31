@@ -2,11 +2,11 @@
 
 [![PyPI version](https://img.shields.io/pypi/v/neuralplex.svg)](https://pypi.org/project/neuralplex/) [![Python versions](https://img.shields.io/pypi/pyversions/neuralplex.svg)](https://pypi.org/project/neuralplex/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/adamjpatterson/neuralplex/blob/main/LICENSE)
 
-An object oriented educational/experimental neural network implementation.
+A neural network implementation built as an explicit graph of neurons and weighted connections.
 
 ## Introduction
 
-**Neural-pleX** is an intuitive object oriented neural network implementation. The Neural-pleX API consists of Network, Layer, and Neuron constructors. The networks can be easily [visualized](#visualizations-of-the-network-before-and-after-training) using a visualization library.
+**Neural-pleX** represents individual neurons and their connections explicitly, with manual backpropagation. The Neural-pleX API consists of Network, Layer, and Neuron constructors. The networks can be easily [visualized](#visualizations-of-the-network-before-and-after-training) using a visualization library.
 
 ## Table of contents
 
@@ -80,7 +80,7 @@ Each computational neuron calculates `activation(sum(source.value * weight) + bi
 
 ### Explore a trained network
 
-After training, remove a connection and compare predictions to see how it affects the network. This experiment is called an ablation. Do not retrain during the comparison; restore the saved weight before trying another connection.
+After training, remove a connection and compare predictions to see how it affects the network. This experiment is called an ablation.
 
 Using your trained network as `n1`:
 
