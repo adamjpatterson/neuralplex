@@ -18,6 +18,7 @@ An object oriented educational/experimental neural network implementation.
 - [The nibble challenge](#the-nibble-challenge)
 - [The digits experiment](#the-digits-experiment)
 - [Tests](#tests)
+- [Documentation maintenance](#documentation-maintenance)
 
 ## Installation
 
@@ -204,7 +205,21 @@ true digit and columns show the predicted digit.
 
 ![Digits confusion matrix](https://raw.githubusercontent.com/adamjpatterson/neuralplex/main/images/digits_confusion_matrix.png)
 
-#### Regenerating README figures
+## Tests
+
+The single formal suite in `tests/test.py` checks forward calculations, manual
+gradients, parameter updates, detachment and reconnection, and input validation.
+It runs independently of the notebooks and optional visualization dependencies.
+
+#### Run all tests.
+
+```bash
+python -m unittest -v
+```
+
+## Documentation maintenance
+
+### Regenerating README figures
 
 The [documentation-image project](https://github.com/adamjpatterson/neuralplex/blob/main/docs/README.md) has its own dependencies and
 fixed seed-42 scenarios. From `docs/`, after following its environment setup:
@@ -217,18 +232,6 @@ It generates the nibble network image, digits predictions, and confusion matrix
 directly from Python, without importing or running the examples. Only this
 workflow writes the README images. The notebooks are for exploration and retain
 inline results for reading on GitHub.
-
-## Tests
-
-The single formal suite in `tests/test.py` checks forward calculations, manual
-gradients, parameter updates, detachment and reconnection, and input validation.
-It runs independently of the notebooks and optional visualization dependencies.
-
-#### Run all tests.
-
-```bash
-python -m unittest -v
-```
 
 ## Support
 
