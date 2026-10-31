@@ -22,13 +22,23 @@ An object oriented educational/experimental neural network implementation.
 
 ## Installation
 
+To use the published package:
+
+```bash
+python -m pip install neuralplex
+```
+
+To explore the notebooks or modify the package, clone the repository and install
+the checkout:
+
 ```bash
 git clone https://github.com/adamjpatterson/neuralplex.git
 cd neuralplex
 python -m pip install -e .
 ```
 
-Install from this checkout to use the implementation documented below.
+Follow each example’s setup instructions below to install its notebook and
+visualization dependencies.
 
 ## How it works
 
@@ -43,6 +53,12 @@ from neuralplex import Network, Layer, Neuron
 ```
 
 #### Set a step.
+
+`step` is the learning rate: it controls the size of weight and bias updates.
+Each update subtracts `step` times the corresponding gradient.
+`Layer(step=...)` supplies an initial default only to neurons whose `step` is
+`None`. Changing `layer.step` later does not change the neurons; update each
+`neuron.step` directly to change its learning rate.
 
 ```python
 STEP = 0.01
@@ -83,9 +99,11 @@ hidden layers. Linear layers are sufficient for the nibble conversion task.
 
 `train` minimizes half the sum of squared output errors. It runs the forward
 pass, accumulates gradients backward through every connection, and only then
-updates weights and biases. A weight's gradient is `delta * source.value`;
+updates weights and biases. `delta` is the derivative of the loss with respect
+to the neuron's weighted sum plus bias, before activation.
+A weight's gradient is `delta * source.value`;
 the bias gradient is `delta`. The code uses explicit loops, not automatic
-differentiation. Every non-input neuron needs a positive step.
+differentiation. Every non-input neuron needs a finite, positive `step` for training.
 
 `Neuron(bias=...)` sets the bias. Each incoming connection has its own weight,
 stored in `receiver.weights[source]`. `Network(..., seed=42)` initializes
@@ -95,6 +113,11 @@ weights. Visualization modules read connections directly from
 `receiver.weights.items()`. Give nodes unique names when visualizing them.
 
 ### Detach and reconnect between training steps
+
+You can change an existing connection weight through `receiver.weights[source]`.
+To add or remove connections, use `connectRHS`/`connectLHS` and
+`disconnectRHS`/`disconnectLHS` rather than inserting or deleting dictionary
+entries. These methods keep incoming weights and outgoing connections consistent.
 
 ```python
 hidden = n1.layers[1].neurons[0]
@@ -112,9 +135,9 @@ for target, weight in outgoing.items():
 
 The neuron's bias, activation, and learning rate remain on the object. For one
 edge, use `source.disconnectRHS(target)` and `source.connectRHS(target, weight)`.
-Removing an edge does not cascade. A computational node without inputs uses
-its bias; an empty hidden layer left by detachment is allowed. Connections must
-run from earlier to later layers; input/output neurons cannot be detached.
+Removing an edge does not cascade. A non-input neuron without incoming
+connections outputs `activation(bias)`; an empty hidden layer left by detachment
+is allowed. Connections must run from earlier to later layers; input/output neurons cannot be detached.
 Change structure only between training steps, not concurrently with training.
 
 ## Examples

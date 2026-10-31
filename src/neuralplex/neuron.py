@@ -1,4 +1,4 @@
-from math import tanh
+from math import isfinite, tanh
 from random import uniform
 from typing import Self
 
@@ -10,8 +10,8 @@ class Neuron:
                  name=None, activation: str = "linear"):
         if activation not in ("linear", "tanh"):
             raise ValueError("activation must be 'linear' or 'tanh'")
-        if step is not None and step <= 0:
-            raise ValueError("step must be positive")
+        if step is not None and (not isfinite(step) or step <= 0):
+            raise ValueError("step must be finite and positive")
         self.bias = bias
         self.step = step
         self.name = name

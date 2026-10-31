@@ -1,3 +1,4 @@
+from math import isfinite
 from random import Random
 
 from neuralplex.layer import Layer
@@ -48,8 +49,8 @@ class Network:
             raise ValueError("Supply one target value per output neuron")
         for layer in self.layers[1:]:
             for neuron in layer.neurons:
-                if neuron.step is None or neuron.step <= 0:
-                    raise ValueError("Every computational neuron needs a positive step")
+                if neuron.step is None or not isfinite(neuron.step) or neuron.step <= 0:
+                    raise ValueError("Every computational neuron needs a finite, positive step")
         self.predict(X_train)
 
         # Clear all gradients, including those accumulated at input neurons.

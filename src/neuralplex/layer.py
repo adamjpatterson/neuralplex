@@ -1,3 +1,4 @@
+from math import isfinite
 from typing import Self
 from random import Random
 
@@ -6,8 +7,8 @@ from neuralplex.neuron import Neuron
 
 class Layer:
     def __init__(self, neurons: list[Neuron], step: float | None = None):
-        if step is not None and step <= 0:
-            raise ValueError("step must be positive")
+        if step is not None and (not isfinite(step) or step <= 0):
+            raise ValueError("step must be finite and positive")
         self.neurons = neurons
         self.step = step
         for neuron in neurons:

@@ -89,6 +89,22 @@ class TestCorrectness(unittest.TestCase):
         with self.assertRaises(ValueError):
             model.predict([1, 2, 3])
 
+    def test_invalid_learning_rates(self):
+        for step in [0, -0.1, float('nan'), float('inf'), float('-inf')]:
+            with self.subTest(step=step):
+                with self.assertRaises(ValueError):
+                    Neuron(step=step)
+                with self.assertRaises(ValueError):
+                    Layer([Neuron()], step=step)
+
+                model = Network([Layer([Neuron()]), Layer([Neuron()], step=0.1)], seed=42)
+                output = model.output_layer.neurons[0]
+                before = (dict(output.weights), output.bias)
+                output.step = step  # Manual changes must also be checked before training.
+                with self.assertRaises(ValueError):
+                    model.train([1], [1])
+                self.assertEqual((output.weights, output.bias), before)
+
     def test_missing_step_and_external_connections(self):
         a, b, outside = Neuron(), Neuron(), Neuron()
         model = Network([Layer([a]), Layer([b])])
