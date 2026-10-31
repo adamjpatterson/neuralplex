@@ -2,7 +2,7 @@
 
 import unittest
 
-from neuralplex import Layer, Network, Neuron, get_edge_data
+from neuralplex import Layer, Network, Neuron
 
 
 class TestCorrectness(unittest.TestCase):
@@ -64,6 +64,7 @@ class TestCorrectness(unittest.TestCase):
         outgoing = output.weights[hidden]
         before = model.predict([1, 2, 3])
         model.detach(hidden)
+        self.assertEqual(output.weights, {})
         self.assertEqual(hidden.weights, {})
         self.assertEqual(hidden.neuronsRHS, [])
         self.assertTrue(all(not n.neuronsRHS for n in inputs))
@@ -74,8 +75,11 @@ class TestCorrectness(unittest.TestCase):
         hidden.connectRHS(output, outgoing)
         hidden.connectRHS(output, 999)  # Existing edges keep their weights.
         self.assertEqual(model.predict([1, 2, 3]), before)
-        self.assertIn({'source': 'h', 'target': 'o', 'weight': outgoing}, get_edge_data(model))
-        self.assertEqual(len(get_edge_data(model)), 4)
+        self.assertEqual(hidden.weights, incoming)
+        self.assertEqual(output.weights, {hidden: outgoing})
+        self.assertEqual(hidden.neuronsRHS, [output])
+        for source in inputs:
+            self.assertEqual(source.neuronsRHS, [hidden])
         inputs[0].disconnectRHS(hidden)
         inputs[0].disconnectRHS(hidden)
         model.train([1, 2, 3], [1])

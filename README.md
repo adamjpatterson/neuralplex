@@ -91,8 +91,8 @@ differentiation. Every non-input neuron needs a positive step.
 stored in `receiver.weights[source]`. `Network(..., seed=42)` initializes
 weights reproducibly in [-0.1, 0.1]. Connections added
 later accept an explicit `weight`; repeated connection calls preserve existing
-weights. `get_edge_data` returns actual edges with signed weights, without
-synthetic null-target edges. Give nodes unique names when visualizing them.
+weights. Visualization modules read connections directly from
+`receiver.weights.items()`. Give nodes unique names when visualizing them.
 
 ### Detach and reconnect between training steps
 
