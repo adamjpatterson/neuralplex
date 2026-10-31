@@ -26,16 +26,6 @@ To use the published package:
 python -m pip install neuralplex
 ```
 
-To explore the notebooks or modify the package, clone the repository and install the checkout:
-
-```bash
-git clone https://github.com/adamjpatterson/neuralplex.git
-cd neuralplex
-python -m pip install -e .
-```
-
-Follow each example’s setup instructions below to install its notebook and visualization dependencies.
-
 ## How it works
 
 This implementation demonstrates each component of the API. A 3 layer neural network is constructed that has a 4 neuron input Layer and a 1 neuron output layer. The hidden layer has 8 neurons.
@@ -57,8 +47,6 @@ STEP = 0.01
 ```
 
 #### Construct a neural network by specifying the Neurons for each Layer and adding the Layers to a Network.
-
-The resulting neural network will have 4 input neurons, 1 output neuron, and 8 neurons in the hidden layer.
 
 ```python
 l1 = Layer(neurons=[Neuron() for i in range(0, 4)], step=STEP)
@@ -84,11 +72,11 @@ print(prediction)
 
 ### How a neuron learns
 
-Each computational neuron calculates `activation(sum(source.value * weight) + bias)`. Inputs hold raw values. `Neuron()` uses linear activation; `Neuron(activation="tanh")` is available for hidden layers. Linear layers are sufficient for the nibble conversion task.
+Each computational neuron calculates `activation(sum(source.value * weight) + bias)`. Inputs hold raw values. `Neuron()` uses linear activation; `Neuron(activation="tanh")` is available for hidden layers.
 
-`train` minimizes half the sum of squared output errors. It runs the forward pass, accumulates gradients backward through every connection, and only then updates weights and biases. `delta` is the derivative of the loss with respect to the neuron's weighted sum plus bias, before activation. A weight's gradient is `delta * source.value`; the bias gradient is `delta`. The code uses explicit loops, not automatic differentiation. Every non-input neuron needs a finite, positive `step` for training.
+`Network.train` minimizes half the sum of squared output errors. It runs the forward pass, accumulates gradients backward through every connection, and only then updates weights and biases. `delta` is the derivative of the loss with respect to the neuron's weighted sum plus bias, before activation. A weight's gradient is `delta * source.value`; the bias gradient is `delta`. The code uses explicit loops, not automatic differentiation. Every non-input neuron needs a finite, positive `step` for training.
 
-`Neuron(bias=...)` sets the bias. Each incoming connection has its own weight, stored in `receiver.weights[source]`. `Network(..., seed=42)` initializes weights reproducibly in [-0.1, 0.1]. Connections added later accept an explicit `weight`; repeated connection calls preserve existing weights. Visualization modules read connections directly from `receiver.weights.items()`. Give nodes unique names when visualizing them.
+`Neuron(bias=...)` sets the bias. Each incoming connection has its own weight, stored in the receiver neuron's `weights[source]`. `Network(..., seed=42)` initializes weights reproducibly in [-0.1, 0.1]. Connections added later accept an explicit `weight`; repeated connection calls preserve existing weights.
 
 ### Explore a trained network
 
@@ -147,7 +135,7 @@ Training and evaluation both use all sixteen nibbles.
 - Node area above a small visibility floor is proportional to absolute activation. Green nodes are inputs, red nodes are hidden, and yellow is the output.
 - Both panels use the same input, positions, and scales. Node size represents activity, not importance, and does not encode the activation's sign.
 
-The notebook imports `visualize_network` from [its visualization module](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_nibble_challenge/visualizations.py). Figures display inline.
+The notebook imports `visualize_network` from [its visualization module](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_nibble_challenge/visualizations.py).
 
 ### The digits experiment
 
@@ -169,13 +157,13 @@ pip install .
 
 Open [the digits experiment notebook](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_digits_experiment/main.ipynb). It starts by displaying the [8×8 digits dataset](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html), then normalizes pixels, creates a training/test split, constructs a 64 → 16 → 10 network, trains, and evaluates unseen images. You can inspect an individual prediction and its ten output scores. Scores are not probabilities.
 
-The reproducible settings use seed 42, 1,347 training images, 450 test images, 20 epochs, and a step of 0.001. The example achieves **90.22% test accuracy**, compared with **10.22%** for always predicting the most common training digit. Reserve a validation subset from training data before tuning parameters.
+The reproducible settings use seed 42, 1,347 training images, 450 test images, 20 epochs, and a step of 0.001. The example achieves **90.22% test accuracy**, compared with **10.22%** for always predicting the most common training digit.
 
-The notebook imports `plot_predictions` and `plot_confusion_matrix` from [its visualization module](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_digits_experiment/visualizations.py). Results and figures display in the notebook.
+The notebook imports `plot_predictions` and `plot_confusion_matrix` from [its visualization module](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_digits_experiment/visualizations.py).
 
 #### Digits predictions and confusion matrix
 
-The prediction figure shows the first twelve test images, not selected successes. The confusion matrix includes all 450 test images; rows show the true digit and columns show the predicted digit.
+The prediction figure shows the first twelve test images. The confusion matrix includes all 450 test images; rows show the true digit and columns show the predicted digit.
 
 ![Digits predictions](https://raw.githubusercontent.com/adamjpatterson/neuralplex/main/images/digits_predictions.png)
 
