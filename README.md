@@ -141,36 +141,23 @@ is allowed.
 
 ## Examples
 
-The examples are notebooks with runnable cells for data preparation, network
-construction, training, evaluation, and exploration. Each notebook imports
-rendering functions from its neighboring `visualizations.py`.
+### The nibble challenge
 
-Each example is an independent project with its own dependencies and setup
-instructions. Create a separate environment for each, install the local
-Neuralplex checkout alongside that project, and launch its notebook:
+#### Setup
 
-- [Nibble challenge setup](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_nibble_challenge/README.md)
-- [Digits experiment setup](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_digits_experiment/README.md)
+Change directory into the example project from the repository root.
 
-Run cells from top to bottom. When changing training settings, restart the
-kernel and run all cells; rerunning only training continues from the current
-weights.
-
-```text
-examples/
-├── the_nibble_challenge/
-│   ├── pyproject.toml
-│   ├── README.md
-│   ├── main.ipynb
-│   └── visualizations.py
-└── the_digits_experiment/
-    ├── pyproject.toml
-    ├── README.md
-    ├── main.ipynb
-    └── visualizations.py
+```
+cd examples/the_nibble_challenge
 ```
 
-### The nibble challenge
+Install the example dependencies.
+
+```
+pip install .
+```
+
+#### Explore the notebook
 
 Open [the nibble challenge notebook](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_nibble_challenge/main.ipynb).
 It introduces all sixteen four-bit inputs, constructs a 4 → 8 → 1 network,
@@ -196,6 +183,22 @@ The notebook imports `visualize_network` from
 Figures display inline.
 
 ### The digits experiment
+
+#### Setup
+
+Change directory into the example project from the repository root.
+
+```bash
+cd examples/the_digits_experiment
+```
+
+Install the example dependencies.
+
+```bash
+pip install .
+```
+
+#### Explore the notebook
 
 Open [the digits experiment notebook](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_digits_experiment/main.ipynb).
 It starts by displaying the [8×8 digits dataset](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html),
