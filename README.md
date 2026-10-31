@@ -1,8 +1,6 @@
 # Neural-pleX
 
-[![PyPI version](https://img.shields.io/pypi/v/neuralplex.svg)](https://pypi.org/project/neuralplex/)
-[![Python versions](https://img.shields.io/pypi/pyversions/neuralplex.svg)](https://pypi.org/project/neuralplex/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/adamjpatterson/neuralplex/blob/main/LICENSE)
+[![PyPI version](https://img.shields.io/pypi/v/neuralplex.svg)](https://pypi.org/project/neuralplex/) [![Python versions](https://img.shields.io/pypi/pyversions/neuralplex.svg)](https://pypi.org/project/neuralplex/) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/adamjpatterson/neuralplex/blob/main/LICENSE)
 
 An object oriented educational/experimental neural network implementation.
 
@@ -28,8 +26,7 @@ To use the published package:
 python -m pip install neuralplex
 ```
 
-To explore the notebooks or modify the package, clone the repository and install
-the checkout:
+To explore the notebooks or modify the package, clone the repository and install the checkout:
 
 ```bash
 git clone https://github.com/adamjpatterson/neuralplex.git
@@ -37,8 +34,7 @@ cd neuralplex
 python -m pip install -e .
 ```
 
-Follow each example’s setup instructions below to install its notebook and
-visualization dependencies.
+Follow each example’s setup instructions below to install its notebook and visualization dependencies.
 
 ## How it works
 
@@ -54,11 +50,7 @@ from neuralplex import Network, Layer, Neuron
 
 #### Set a step.
 
-`step` is the learning rate: it controls the size of weight and bias updates.
-Each update subtracts `step` times the corresponding gradient.
-`Layer(step=...)` supplies an initial default only to neurons whose `step` is
-`None`. Changing `layer.step` later does not change the neurons; update each
-`neuron.step` directly to change its learning rate.
+`step` is the learning rate: it controls the size of weight and bias updates. Each update subtracts `step` times the corresponding gradient. `Layer(step=...)` supplies an initial default only to neurons whose `step` is `None`. Changing `layer.step` later does not change the neurons; update each `neuron.step` directly to change its learning rate.
 
 ```python
 STEP = 0.01
@@ -92,52 +84,36 @@ print(prediction)
 
 ### How a neuron learns
 
-Each computational neuron calculates
-`activation(sum(source.value * weight) + bias)`. Inputs hold raw values.
-`Neuron()` uses linear activation; `Neuron(activation="tanh")` is available for
-hidden layers. Linear layers are sufficient for the nibble conversion task.
+Each computational neuron calculates `activation(sum(source.value * weight) + bias)`. Inputs hold raw values. `Neuron()` uses linear activation; `Neuron(activation="tanh")` is available for hidden layers. Linear layers are sufficient for the nibble conversion task.
 
-`train` minimizes half the sum of squared output errors. It runs the forward
-pass, accumulates gradients backward through every connection, and only then
-updates weights and biases. `delta` is the derivative of the loss with respect
-to the neuron's weighted sum plus bias, before activation.
-A weight's gradient is `delta * source.value`;
-the bias gradient is `delta`. The code uses explicit loops, not automatic
-differentiation. Every non-input neuron needs a finite, positive `step` for training.
+`train` minimizes half the sum of squared output errors. It runs the forward pass, accumulates gradients backward through every connection, and only then updates weights and biases. `delta` is the derivative of the loss with respect to the neuron's weighted sum plus bias, before activation. A weight's gradient is `delta * source.value`; the bias gradient is `delta`. The code uses explicit loops, not automatic differentiation. Every non-input neuron needs a finite, positive `step` for training.
 
-`Neuron(bias=...)` sets the bias. Each incoming connection has its own weight,
-stored in `receiver.weights[source]`. `Network(..., seed=42)` initializes
-weights reproducibly in [-0.1, 0.1]. Connections added
-later accept an explicit `weight`; repeated connection calls preserve existing
-weights. Visualization modules read connections directly from
-`receiver.weights.items()`. Give nodes unique names when visualizing them.
+`Neuron(bias=...)` sets the bias. Each incoming connection has its own weight, stored in `receiver.weights[source]`. `Network(..., seed=42)` initializes weights reproducibly in [-0.1, 0.1]. Connections added later accept an explicit `weight`; repeated connection calls preserve existing weights. Visualization modules read connections directly from `receiver.weights.items()`. Give nodes unique names when visualizing them.
 
-### Detach and reconnect between training steps
+### Explore a trained network
 
-You can change an existing connection weight through `receiver.weights[source]`.
-To add or remove connections, use `connectRHS`/`connectLHS` and
-`disconnectRHS`/`disconnectLHS` rather than inserting or deleting dictionary
-entries. These methods keep incoming weights and outgoing connections consistent.
+After training, remove a connection and compare predictions to see how it affects the network. This experiment is called an ablation. Do not retrain during the comparison; restore the saved weight before trying another connection.
+
+Using your trained network as `n1`:
 
 ```python
-hidden = n1.layers[1].neurons[0]
-incoming = dict(hidden.weights)
-outgoing = {target: target.weights[hidden] for target in hidden.neuronsRHS}
-n1.detach(hidden)
+inputs = [1, 0, 1, 0]
+source = n1.layers[1].neurons[0]
+receiver = n1.output_layer.neurons[0]
+weight = receiver.weights[source]
+before = n1.predict(inputs)
 
-# Restore the neuron, including its saved connection weights.
-n1.layers[1].neurons.append(hidden)
-for source, weight in incoming.items():
-    source.connectRHS(hidden, weight=weight)
-for target, weight in outgoing.items():
-    hidden.connectRHS(target, weight=weight)
+source.disconnectRHS(receiver)
+after = n1.predict(inputs)
+print("Original prediction:", before)
+print("Without the connection:", after)
+
+source.connectRHS(receiver, weight=weight)
 ```
 
-The neuron's bias, activation, and learning rate remain on the object. For one
-edge, use `source.disconnectRHS(target)` and `source.connectRHS(target, weight)`.
-Removing an edge does not cascade. A non-input neuron without incoming
-connections outputs `activation(bias)`; an empty hidden layer left by detachment
-is allowed.
+Try several inputs: a connection's effect can depend on the input. To explore a whole hidden neuron, `n1.detach(neuron)` removes it from its layer and disconnects all its incoming and outgoing edges. Save those weights before detaching if you want to restore it, then add the neuron back to its layer and reconnect its edges. Its bias, activation, and learning rate remain on the object.
+
+You can also change an existing weight through `receiver.weights[source]`. Use the connection methods to add or remove edges so incoming weights and outgoing connections stay consistent.
 
 ## Examples
 
@@ -159,11 +135,7 @@ pip install .
 
 #### Explore the notebook
 
-Open [the nibble challenge notebook](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_nibble_challenge/main.ipynb).
-It introduces all sixteen four-bit inputs, constructs a 4 → 8 → 1 network,
-compares initial and trained predictions, and lets you change an input to
-inspect weights and activations. With seed 42, a step of 0.01, and 10,000
-training examples, the displayed R² rounds to 1.000000000.
+Open [the nibble challenge notebook](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_nibble_challenge/main.ipynb). It introduces all sixteen four-bit inputs, constructs a 4 → 8 → 1 network, compares initial and trained predictions, and lets you change an input to inspect weights and activations. With seed 42, a step of 0.01, and 10,000 training examples, the displayed R² rounds to 1.000000000.
 
 Training and evaluation both use all sixteen nibbles.
 
@@ -171,16 +143,11 @@ Training and evaluation both use all sixteen nibbles.
 
 ![Nibble network before and after training](https://raw.githubusercontent.com/adamjpatterson/neuralplex/main/images/nibble_multiweight.png)
 
-- Edge thickness is proportional to the absolute connection weight. Blue is
-  positive; orange is negative. Zero-weight edges have zero width.
-- Node area above a small visibility floor is proportional to absolute activation.
-  Green nodes are inputs, red nodes are hidden, and yellow is the output.
-- Both panels use the same input, positions, and scales. Node size represents
-  activity, not importance, and does not encode the activation's sign.
+- Edge thickness is proportional to the absolute connection weight. Blue is positive; orange is negative. Zero-weight edges have zero width.
+- Node area above a small visibility floor is proportional to absolute activation. Green nodes are inputs, red nodes are hidden, and yellow is the output.
+- Both panels use the same input, positions, and scales. Node size represents activity, not importance, and does not encode the activation's sign.
 
-The notebook imports `visualize_network` from
-[its visualization module](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_nibble_challenge/visualizations.py).
-Figures display inline.
+The notebook imports `visualize_network` from [its visualization module](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_nibble_challenge/visualizations.py). Figures display inline.
 
 ### The digits experiment
 
@@ -200,26 +167,15 @@ pip install .
 
 #### Explore the notebook
 
-Open [the digits experiment notebook](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_digits_experiment/main.ipynb).
-It starts by displaying the [8×8 digits dataset](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html),
-then normalizes pixels, creates a training/test split, constructs a
-64 → 16 → 10 network, trains, and evaluates unseen images. You can inspect an
-individual prediction and its ten output scores. Scores are not probabilities.
+Open [the digits experiment notebook](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_digits_experiment/main.ipynb). It starts by displaying the [8×8 digits dataset](https://scikit-learn.org/stable/modules/generated/sklearn.datasets.load_digits.html), then normalizes pixels, creates a training/test split, constructs a 64 → 16 → 10 network, trains, and evaluates unseen images. You can inspect an individual prediction and its ten output scores. Scores are not probabilities.
 
-The reproducible settings use seed 42, 1,347 training images, 450 test images,
-20 epochs, and a step of 0.001. The example achieves **90.22% test accuracy**,
-compared with **10.22%** for always predicting the most common training digit.
-Reserve a validation subset from training data before tuning parameters.
+The reproducible settings use seed 42, 1,347 training images, 450 test images, 20 epochs, and a step of 0.001. The example achieves **90.22% test accuracy**, compared with **10.22%** for always predicting the most common training digit. Reserve a validation subset from training data before tuning parameters.
 
-The notebook imports `plot_predictions` and `plot_confusion_matrix` from
-[its visualization module](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_digits_experiment/visualizations.py).
-Results and figures display in the notebook.
+The notebook imports `plot_predictions` and `plot_confusion_matrix` from [its visualization module](https://github.com/adamjpatterson/neuralplex/blob/main/examples/the_digits_experiment/visualizations.py). Results and figures display in the notebook.
 
 #### Digits predictions and confusion matrix
 
-The prediction figure shows the first twelve test images, not selected
-successes. The confusion matrix includes all 450 test images; rows show the
-true digit and columns show the predicted digit.
+The prediction figure shows the first twelve test images, not selected successes. The confusion matrix includes all 450 test images; rows show the true digit and columns show the predicted digit.
 
 ![Digits predictions](https://raw.githubusercontent.com/adamjpatterson/neuralplex/main/images/digits_predictions.png)
 
@@ -227,8 +183,7 @@ true digit and columns show the predicted digit.
 
 ## Tests
 
-The suite in `tests/test.py` checks forward calculations, manual
-gradients, parameter updates, detachment and reconnection, and input validation.
+The suite in `tests/test.py` checks forward calculations, manual gradients, parameter updates, detachment and reconnection, and input validation.
 
 #### Run all tests.
 
@@ -240,15 +195,13 @@ python -m unittest -v
 
 ### Regenerating README figures
 
-The [documentation-image project](https://github.com/adamjpatterson/neuralplex/blob/main/docs/README.md) has its own dependencies and
-fixed seed-42 scenarios. From `docs/`, after following its environment setup:
+The [documentation-image project](https://github.com/adamjpatterson/neuralplex/blob/main/docs/README.md) has its own dependencies and fixed seed-42 scenarios. From `docs/`, after following its environment setup:
 
 ```bash
 python generate_images.py
 ```
 
-It writes the nibble network image, digits predictions, and confusion matrix
-to `images/`.
+It writes the nibble network image, digits predictions, and confusion matrix to `images/`.
 
 ## Support
 
